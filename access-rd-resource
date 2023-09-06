@@ -1,0 +1,66 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "ec2:StartInstances",
+                "ec2:StopInstances"
+            ],
+            "Resource": "arn:aws:ec2:us-west-2:111111111111:instance/*",
+            "Condition": {
+                "StringLike": {
+                    "aws:ResourceTag/Name": [
+                        "billing-dev*",
+                        "billing-uat*"
+                    ]
+                }
+            }
+        },
+        {
+            "Sid": "VisualEditor1",
+            "Effect": "Allow",
+            "Action": "ecs:RegisterTaskDefinition",
+            "Resource": "*"
+        },
+        {
+            "Sid": "VisualEditor2",
+            "Effect": "Allow",
+            "Action": [
+                "ecs:UpdateService",
+                "ecs:UpdateCluster",
+                "iam:PassRole",
+                "ecs:UpdateClusterSettings",
+                "ecs:RunTask",
+                "rds:DescribeDBInstances",
+                "ecs:StartTask",
+                "ecs:RegisterContainerInstance",
+                "ecs:StopTask",
+                "rds:StopDBInstance",
+                "ecs:TagResource",
+                "rds:StartDBInstance"
+            ],
+            "Resource": [
+                "arn:aws:ecs:us-west-2:111111111111:service/billing-dev*/billing-dev*",
+                "arn:aws:ecs:us-west-2:111111111111:service/billing-uat*/billing-uat*",
+                "arn:aws:ecs:us-west-2:111111111111:task-definition/billing-dev*:*",
+                "arn:aws:ecs:us-west-2:111111111111:task-definition/billing_dev*:*",
+                "arn:aws:ecs:us-west-2:111111111111:task-definition/billing-uat*:*",
+                "arn:aws:ecs:us-west-2:111111111111:task-definition/billing_uat*:*",
+                "arn:aws:ecs:us-west-2:111111111111:cluster/billing-dev*",
+                "arn:aws:ecs:us-west-2:111111111111:cluster/billing-uat*",
+                "arn:aws:ecs:us-west-2:111111111111:task-set/billing-dev*/billing-dev*/*",
+                "arn:aws:ecs:us-west-2:111111111111:task-set/billing-uat*/billing-uat*/*",
+                "arn:aws:ecs:us-west-2:111111111111:task/billing-dev*/*",
+                "arn:aws:ecs:us-west-2:111111111111:task/billing-uat*/*",
+                "arn:aws:ecs:us-west-2:111111111111:container-instance/billing-dev*/*",
+                "arn:aws:ecs:us-west-2:111111111111:container-instance/billing-uat*/*",
+                "arn:aws:ecs:us-west-2:111111111111:capacity-provider/*",
+                "arn:aws:rds:us-west-2:111111111111:db:billing-dev*",
+                "arn:aws:rds:us-west-2:111111111111:db:billing-uat*",
+                "arn:aws:iam::111111111111:role/*"
+            ]
+        }
+    ]
+}
