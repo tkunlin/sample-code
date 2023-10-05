@@ -1,0 +1,135 @@
+{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "VisualEditor0",
+			"Effect": "Allow",
+			"Action": [
+				"s3:ListAccessPointsForObjectLambda",
+				"states:ListStateMachines",
+				"s3:PutStorageLensConfiguration",
+				"logs:ListLogDeliveries",
+				"logs:CancelExportTask",
+				"scheduler:ListSchedules",
+				"lambda:ListLayerVersions",
+				"lambda:ListLayers",
+				"lambda:ListCodeSigningConfigs",
+				"logs:DescribeDestinations",
+				"s3:PutAccountPublicAccessBlock",
+				"lambda:ListFunctions",
+				"states:ListActivities",
+				"s3:ListJobs",
+				"logs:StopQuery",
+				"logs:DeleteQueryDefinition",
+				"logs:Link",
+				"logs:CreateLogDelivery",
+				"states:SendTaskSuccess",
+				"logs:PutResourcePolicy",
+				"logs:DescribeExportTasks",
+				"logs:UpdateLogDelivery",
+				"s3:PutAccessPointPublicAccessBlock",
+				"lambda:ListEventSourceMappings",
+				"s3:CreateJob",
+				"s3:GetAccessPoint",
+				"lambda:GetAccountSettings",
+				"lambda:CreateEventSourceMapping",
+				"logs:GetLogDelivery",
+				"logs:DeleteAccountPolicy",
+				"logs:DeleteResourcePolicy",
+				"iam:PassRole",
+				"states:SendTaskFailure",
+				"logs:StartLiveTail",
+				"logs:StopLiveTail",
+				"logs:DeleteLogDelivery",
+				"logs:DescribeQueryDefinitions",
+				"lambda:CreateCodeSigningConfig",
+				"logs:DescribeResourcePolicies",
+				"logs:DescribeQueries",
+				"sqs:ListQueues",
+				"logs:DescribeLogGroups",
+				"s3:ListAccessPoints",
+				"logs:DescribeAccountPolicies",
+				"logs:TestMetricFilter",
+				"logs:PutQueryDefinition",
+				"logs:PutAccountPolicy",
+				"scheduler:ListScheduleGroups",
+				"s3:ListMultiRegionAccessPoints",
+				"s3:ListStorageLensConfigurations",
+				"s3:GetAccountPublicAccessBlock",
+				"s3:ListAllMyBuckets",
+				"states:SendTaskHeartbeat"
+			],
+			"Resource": "*"
+		},
+		{
+			"Sid": "VisualEditor1",
+			"Effect": "Allow",
+			"Action": [
+				"sqs:GetQueueUrl",
+				"sqs:ListDeadLetterSourceQueues",
+				"sqs:ListMessageMoveTasks",
+				"sqs:PurgeQueue",
+				"sqs:ReceiveMessage",
+				"sqs:SendMessage",
+				"sqs:GetQueueAttributes",
+				"sqs:ListQueueTags"
+			],
+			"Resource": "arn:aws:sqs:us-west-2:863203846708:billing-dev*"
+		},
+		{
+			"Sid": "VisualEditor2",
+			"Effect": "Allow",
+			"Action": "s3:*",
+			"Resource": "arn:aws:s3:::billing-dev*/*"
+		},
+		{
+			"Sid": "VisualEditor3",
+			"Effect": "Allow",
+			"Action": "scheduler:*",
+			"Resource": "arn:aws:scheduler:us-west-2:863203846708:schedule/*/billing-dev*"
+		},
+		{
+			"Sid": "VisualEditor4",
+			"Effect": "Allow",
+			"Action": "lambda:*",
+			"Resource": [
+				"arn:aws:lambda:us-west-2:863203846708:function:billing-dev*:*",
+				"arn:aws:lambda:us-west-2:863203846708:layer:*:*"
+			]
+		},
+		{
+			"Sid": "VisualEditor5",
+			"Effect": "Allow",
+			"Action": "logs:*",
+			"Resource": [
+				"arn:aws:logs:us-west-2:863203846708:log-group:*billing-dev*",
+				"arn:aws:logs:us-west-2:863203846708:log-group:*billing_dev*"
+			]
+		},
+		{
+			"Sid": "VisualEditor6",
+			"Effect": "Allow",
+			"Action": "states:*",
+			"Resource": [
+				"arn:aws:states:us-west-2:863203846708:stateMachine:billing_dev*",
+				"arn:aws:states:us-west-2:863203846708:express:billing_dev*:*:*",
+				"arn:aws:states:us-west-2:863203846708:execution:billing_dev*:*"
+			]
+		},
+		{
+			"Sid": "VisualEditor7",
+			"Effect": "Allow",
+			"Action": "s3:*",
+			"Resource": "arn:aws:s3:::billing-dev*"
+		},
+		{
+			"Sid": "VisualEditor8",
+			"Effect": "Allow",
+			"Action": "lambda:*",
+			"Resource": [
+				"arn:aws:lambda:us-west-2:863203846708:function:billing-dev*",
+				"arn:aws:lambda:us-west-2:863203846708:layer:*"
+			]
+		}
+	]
+}
