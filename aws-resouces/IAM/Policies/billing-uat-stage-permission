@@ -1,0 +1,146 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "logs:DescribeQueries",
+                "lambda:ListFunctions",
+                "logs:DescribeLogGroups",
+                "logs:DescribeAccountPolicies",
+                "lambda:GetAccountSettings",
+                "logs:StopQuery",
+                "logs:TestMetricFilter",
+                "scheduler:ListScheduleGroups",
+                "logs:GetLogDelivery",
+                "logs:ListLogDeliveries",
+                "logs:DescribeExportTasks",
+                "logs:StartLiveTail",
+                "logs:StopLiveTail",
+                "lambda:ListEventSourceMappings",
+                "scheduler:ListSchedules",
+                "lambda:ListLayerVersions",
+                "lambda:ListLayers",
+                "lambda:ListCodeSigningConfigs",
+                "logs:DescribeQueryDefinitions",
+                "logs:DescribeResourcePolicies",
+                "logs:DescribeDestinations"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "VisualEditor1",
+            "Effect": "Allow",
+            "Action": "s3:Describe*",
+            "Resource": [
+                "arn:aws:s3:::billing-uat*",
+                "arn:aws:s3:::billing-stage*"
+            ]
+        },
+        {
+            "Sid": "VisualEditor2",
+            "Effect": "Allow",
+            "Action": [
+                "logs:GetDataProtectionPolicy",
+                "logs:GetLogRecord",
+                "states:DescribeStateMachine",
+                "states:DescribeStateMachineAlias",
+                "logs:DescribeSubscriptionFilters",
+                "logs:StartQuery",
+                "lambda:GetFunctionConfiguration",
+                "logs:DescribeMetricFilters",
+                "lambda:ListProvisionedConcurrencyConfigs",
+                "states:ListStateMachineAliases",
+                "lambda:GetProvisionedConcurrencyConfig",
+                "states:GetExecutionHistory",
+                "logs:GetLogEvents",
+                "scheduler:GetScheduleGroup",
+                "logs:FilterLogEvents",
+                "lambda:GetAlias",
+                "states:ListMapRuns",
+                "lambda:InvokeFunction",
+                "lambda:GetEventSourceMapping",
+                "lambda:ListAliases",
+                "lambda:GetFunctionUrlConfig",
+                "logs:Unmask",
+                "states:StopExecution",
+                "s3-object-lambda:*",
+                "logs:ListTagsForResource",
+                "lambda:GetFunctionCodeSigningConfig",
+                "lambda:ListFunctionEventInvokeConfigs",
+                "lambda:ListFunctionsByCodeSigningConfig",
+                "s3-object-lambda:Get*",
+                "logs:GetQueryResults",
+                "states:DescribeExecution",
+                "lambda:GetFunctionConcurrency",
+                "logs:ListTagsLogGroup",
+                "states:ListStateMachineVersions",
+                "s3-object-lambda:List*",
+                "states:ListExecutions",
+                "lambda:ListVersionsByFunction",
+                "lambda:GetLayerVersion",
+                "scheduler:GetSchedule",
+                "logs:DescribeLogStreams",
+                "lambda:GetLayerVersionPolicy",
+                "lambda:ListTags",
+                "scheduler:UpdateSchedule",
+                "lambda:GetRuntimeManagementConfig",
+                "lambda:GetFunction",
+                "lambda:ListFunctionUrlConfigs",
+                "scheduler:ListTagsForResource",
+                "states:DescribeStateMachineForExecution",
+                "lambda:GetFunctionEventInvokeConfig",
+                "states:StartExecution",
+                "lambda:GetCodeSigningConfig",
+                "logs:GetLogGroupFields",
+                "lambda:GetPolicy",
+                "states:ListTagsForResource"
+            ],
+            "Resource": [
+                "arn:aws:states:us-west-2:863203846708:execution:billing_uat*:*",
+                "arn:aws:states:us-west-2:863203846708:stateMachine:billing_stage*",
+                "arn:aws:states:us-west-2:863203846708:stateMachine:billing_uat*",
+                "arn:aws:lambda:us-west-2:863203846708:function:billing-uat*",
+                "arn:aws:lambda:us-west-2:863203846708:function:billing-stage*",
+                "arn:aws:scheduler:us-west-2:863203846708:schedule/*/billing-uat*",
+                "arn:aws:scheduler:us-west-2:863203846708:schedule/*/billing-stage*",
+                "arn:aws:s3:::billing-uat*",
+                "arn:aws:s3:::billing-stage*",
+                "arn:aws:logs:us-west-2:863203846708:log-group:*billing-uat*",
+                "arn:aws:logs:us-west-2:863203846708:log-group:*billing_uat*",
+                "arn:aws:logs:us-west-2:863203846708:log-group:*billing-stage*",
+                "arn:aws:logs:us-west-2:863203846708:log-group:*billing_stage*"
+            ]
+        },
+        {
+            "Sid": "VisualEditor3",
+            "Effect": "Allow",
+            "Action": [
+                "s3:Get*",
+                "s3:List*"
+            ],
+            "Resource": [
+                "arn:aws:s3:::billing-uat*",
+                "arn:aws:s3:::billing-stage*"
+            ]
+        },
+        {
+            "Sid": "VisualEditor4",
+            "Effect": "Allow",
+            "Action": [
+                "ssm:Get*",
+                "ssm:GetParameterHistory",
+                "ssm:Describe*",
+                "ssm:GetParametersByPath",
+                "ssm:List*",
+                "ssm:GetParameters",
+                "ssm:GetParameter"
+            ],
+            "Resource": [
+                "arn:aws:ssm:us-west-2:863203846708:parameter/Uat*",
+                "arn:aws:ssm:us-west-2:863203846708:parameter/Stage*"
+            ]
+        }
+    ]
+}
