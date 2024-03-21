@@ -1,0 +1,122 @@
+{
+    "family": "billing_uat_cur_etl_pipeline_rebilling_etl_td",
+    "containerDefinitions": [
+        {
+            "name": "python",
+            "image": "863203846708.dkr.ecr.us-west-2.amazonaws.com/billing-cur-etl-pipeline-rebilling-etl:v3.2.0.0-python",
+            "cpu": 1024,
+            "memory": 5120,
+            "portMappings": [
+                {
+                    "name": "python-8080-tcp",
+                    "containerPort": 8080,
+                    "hostPort": 8080,
+                    "protocol": "tcp"
+                }
+            ],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "AWS_DEFAULT_REGION",
+                    "value": "us-west-2"
+                },
+                {
+                    "name": "AWS_REGION",
+                    "value": "us-west-2"
+                },
+                {
+                    "name": "USE_CONTAINER_DB",
+                    "value": "True"
+                },
+                {
+                    "name": "ASPNETCORE_ENVIRONMENT",
+                    "value": "Uat"
+                },
+                {
+                    "name": "ENV",
+                    "value": "Uat"
+                }
+            ],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "dependsOn": [
+                {
+                    "containerName": "mysql",
+                    "condition": "HEALTHY"
+                }
+            ],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/billing_uat_cur_etl_pipeline_rebilling_etl_td",
+                    "awslogs-region": "us-west-2",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            }
+        },
+        {
+            "name": "mysql",
+            "image": "863203846708.dkr.ecr.us-west-2.amazonaws.com/billing-cur-etl-pipeline-rebilling-etl:v3.1.0.0-mysql",
+            "cpu": 3072,
+            "memory": 10240,
+            "portMappings": [
+                {
+                    "name": "mysql-3306-tcp",
+                    "containerPort": 3306,
+                    "hostPort": 3306,
+                    "protocol": "tcp"
+                }
+            ],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "AWS_DEFAULT_REGION",
+                    "value": "us-west-2"
+                },
+                {
+                    "name": "AWS_REGION",
+                    "value": "us-west-2"
+                },
+                {
+                    "name": "USE_CONTAINER_DB",
+                    "value": "True"
+                },
+                {
+                    "name": "ASPNETCORE_ENVIRONMENT",
+                    "value": "Uat"
+                },
+                {
+                    "name": "ENV",
+                    "value": "Uat"
+                }
+            ],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/billing_uat_cur_etl_pipeline_rebilling_etl_td_mysql",
+                    "awslogs-region": "us-west-2",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            },
+            "healthCheck": {
+                "command": [
+                    "CMD-SHELL",
+                    "mysqladmin ping -h localhost || exit 1"
+                ],
+                "interval": 30,
+                "timeout": 5,
+                "retries": 3
+            }
+        }
+    ],
+    "taskRoleArn": "arn:aws:iam::863203846708:role/billing-ecs-task-role",
+    "executionRoleArn": "arn:aws:iam::863203846708:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": [
+        "EC2"
+    ],
+    "cpu": "4096",
+    "memory": "15360"
+}

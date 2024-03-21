@@ -1,0 +1,59 @@
+{
+    "family": "billing_prod_bill_pdf_taskdef",
+    "containerDefinitions": [
+        {
+            "name": "billing_pdf_bill_container",
+            "image": "960216436767.dkr.ecr.us-west-2.amazonaws.com/billing-cur-pdf-job:v3.0.0.1",
+            "cpu": 1024,
+            "memory": 4096,
+            "links": [],
+            "portMappings": [],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "AWS_DEFAULT_REGION",
+                    "value": "us-west-2"
+                },
+                {
+                    "name": "AWS_REGION",
+                    "value": "us-west-2"
+                },
+                {
+                    "name": "ASPNETCORE_ENVIRONMENT",
+                    "value": "Prod"
+                },
+                {
+                    "name": "ENV",
+                    "value": "Prod"
+                },
+                {
+                    "name": "TIMEOUT_SEC",
+                    "value": "30"
+                }
+            ],
+            "environmentFiles": [],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "dockerSecurityOptions": [],
+            "ulimits": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/billing_prod_bill_pdf_taskdef",
+                    "awslogs-region": "us-west-2",
+                    "awslogs-stream-prefix": "ecs"
+                },
+                "secretOptions": []
+            },
+            "systemControls": []
+        }
+    ],
+    "taskRoleArn": "arn:aws:iam::806235885150:role/billing-ecs-task-role",
+    "executionRoleArn": "arn:aws:iam::806235885150:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "1024",
+    "memory": "4096"
+}

@@ -1,0 +1,64 @@
+{
+    "family": "billing_dev_revenue_send_cno_sqs_td",
+    "containerDefinitions": [
+        {
+            "name": "billing_revenue_send_cno_sqs",
+            "image": "863203846708.dkr.ecr.us-west-2.amazonaws.com/billing-revenue-send-cno-sqs:dev",
+            "cpu": 0,
+            "portMappings": [],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "TRANSFER_CONDITION",
+                    "value": ""
+                },
+                {
+                    "name": "ENV",
+                    "value": "Dev"
+                },
+                {
+                    "name": "BILLING_YYYY_MM",
+                    "value": "2023/07"
+                },
+                {
+                    "name": "CNO",
+                    "value": ""
+                },
+                {
+                    "name": "RUN_CHECK_PDF",
+                    "value": ""
+                },
+                {
+                    "name": "ONLY_RUN_CHECK_PDF",
+                    "value": ""
+                }
+            ],
+            "environmentFiles": [],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "ulimits": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-create-group": "true",
+                    "awslogs-group": "/ecs/billing_dev_revenue_send_cno_sqs_td",
+                    "awslogs-region": "us-west-2",
+                    "awslogs-stream-prefix": "ecs"
+                },
+                "secretOptions": []
+            }
+        }
+    ],
+    "taskRoleArn": "arn:aws:iam::863203846708:role/billing-ecs-task-role",
+    "executionRoleArn": "arn:aws:iam::863203846708:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "1024",
+    "memory": "4096",
+    "runtimePlatform": {
+        "cpuArchitecture": "X86_64",
+        "operatingSystemFamily": "LINUX"
+    }
+}

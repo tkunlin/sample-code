@@ -1,0 +1,326 @@
+{
+  "Comment": "A description of my state machine",
+  "StartAt": "Execute company transfer job",
+  "States": {
+    "Execute company transfer job": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "arn:aws:ecs:us-west-2:960216436767:cluster/billing-prod-job",
+        "TaskDefinition": "arn:aws:ecs:us-west-2:960216436767:task-definition/billing_prod_company_transfer_daily_td:10",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": [
+              "subnet-0598352c1b611c3f5",
+              "subnet-075277cb3e9bae077"
+            ],
+            "SecurityGroups": [
+              "sg-0e88b8715a9ac5b84"
+            ],
+            "AssignPublicIp": "DISABLED"
+          }
+        }
+      },
+      "Next": "Send Message to CNO sqs - First",
+      "ResultPath": null
+    },
+    "Send Message to CNO sqs - First": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "arn:aws:ecs:us-west-2:960216436767:cluster/billing-prod-job",
+        "TaskDefinition": "arn:aws:ecs:us-west-2:960216436767:task-definition/billing_prod_revenue_send_cno_sqs_td:3",
+        "Overrides": {
+          "ContainerOverrides": [
+            {
+              "Name": "billing_revenue_send_cno_sqs",
+              "Environment": [
+                {
+                  "Name": "CNO",
+                  "Value.$": "States.Format('{}', $.CommonVariable.cno)"
+                },
+                {
+                  "Name": "BILLING_YYYY_MM",
+                  "Value.$": "States.Format('{}', $.CommonVariable.billing_yyyy_mm)"
+                },
+                {
+                  "Name": "TRANSFER_CONDITION",
+                  "Value.$": "States.Format('{}', $.ConditionSetting.transfer_condition)"
+                }
+              ]
+            }
+          ]
+        },
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": [
+              "subnet-0598352c1b611c3f5",
+              "subnet-075277cb3e9bae077"
+            ],
+            "SecurityGroups": [
+              "sg-0e88b8715a9ac5b84"
+            ],
+            "AssignPublicIp": "DISABLED"
+          }
+        }
+      },
+      "ResultPath": null,
+      "Next": "Run Revenue Job - First"
+    },
+    "Run Revenue Job - First": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "arn:aws:ecs:us-west-2:960216436767:cluster/billing-prod-job",
+        "TaskDefinition": "arn:aws:ecs:us-west-2:960216436767:task-definition/billing_prod_revenue_computation_main_td:2",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": [
+              "subnet-0598352c1b611c3f5",
+              "subnet-075277cb3e9bae077"
+            ],
+            "SecurityGroups": [
+              "sg-0e88b8715a9ac5b84"
+            ],
+            "AssignPublicIp": "DISABLED"
+          }
+        }
+      },
+      "ResultPath": null,
+      "Next": "Execute company transfer discount job"
+    },
+    "Execute company transfer discount job": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "arn:aws:ecs:us-west-2:960216436767:cluster/billing-prod-job",
+        "TaskDefinition": "arn:aws:ecs:us-west-2:960216436767:task-definition/billing_prod_company_transfer_discount_td:9",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": [
+              "subnet-0598352c1b611c3f5",
+              "subnet-075277cb3e9bae077"
+            ],
+            "SecurityGroups": [
+              "sg-0e88b8715a9ac5b84"
+            ],
+            "AssignPublicIp": "DISABLED"
+          }
+        }
+      },
+      "Next": "Send Message to CNO sqs - Second",
+      "ResultPath": null
+    },
+    "Send Message to CNO sqs - Second": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "arn:aws:ecs:us-west-2:960216436767:cluster/billing-prod-job",
+        "TaskDefinition": "arn:aws:ecs:us-west-2:960216436767:task-definition/billing_prod_revenue_send_cno_sqs_td:3",
+        "Overrides": {
+          "ContainerOverrides": [
+            {
+              "Name": "billing_revenue_send_cno_sqs",
+              "Environment": [
+                {
+                  "Name": "CNO",
+                  "Value.$": "States.Format('{}', $.CommonVariable.cno)"
+                },
+                {
+                  "Name": "BILLING_YYYY_MM",
+                  "Value.$": "States.Format('{}', $.CommonVariable.billing_yyyy_mm)"
+                },
+                {
+                  "Name": "TRANSFER_CONDITION",
+                  "Value.$": "States.Format('{}', $.ConditionSetting.transfer_condition)"
+                }
+              ]
+            }
+          ]
+        },
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": [
+              "subnet-0598352c1b611c3f5",
+              "subnet-075277cb3e9bae077"
+            ],
+            "SecurityGroups": [
+              "sg-0e88b8715a9ac5b84"
+            ],
+            "AssignPublicIp": "DISABLED"
+          }
+        }
+      },
+      "ResultPath": null,
+      "Next": "Run Revenue Job - Second"
+    },
+    "Run Revenue Job - Second": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "arn:aws:ecs:us-west-2:960216436767:cluster/billing-prod-job",
+        "TaskDefinition": "arn:aws:ecs:us-west-2:960216436767:task-definition/billing_prod_revenue_computation_main_td:2",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": [
+              "subnet-0598352c1b611c3f5",
+              "subnet-075277cb3e9bae077"
+            ],
+            "SecurityGroups": [
+              "sg-0e88b8715a9ac5b84"
+            ],
+            "AssignPublicIp": "DISABLED"
+          }
+        }
+      },
+      "ResultPath": null,
+      "Next": "Insert message to PDF sqs"
+    },
+    "Insert message to PDF sqs": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "arn:aws:ecs:us-west-2:960216436767:cluster/billing-prod-job",
+        "TaskDefinition": "arn:aws:ecs:us-west-2:960216436767:task-definition/billing_prod_revenue_insert_pdf_sqs_td:2",
+        "Overrides": {
+          "ContainerOverrides": [
+            {
+              "Name": "billing_revenue_insert_pdf_sqs",
+              "Environment": [
+                {
+                  "Name": "CNO",
+                  "Value.$": "States.Format('{}', $.CommonVariable.cno)"
+                },
+                {
+                  "Name": "BILLING_YYYY_MM",
+                  "Value.$": "States.Format('{}', $.CommonVariable.billing_yyyy_mm)"
+                },
+                {
+                  "Name": "LINKED_ACCOUNT_ID",
+                  "Value.$": "States.Format('{}', $.CommonVariable.linked_account_id)"
+                },
+                {
+                  "Name": "ONLY_RUN_PDF",
+                  "Value.$": "States.Format('{}', $.ConditionSetting.only_run_pdf)"
+                },
+                {
+                  "Name": "TRANSFER_CONDITION",
+                  "Value.$": "States.Format('{}', $.ConditionSetting.transfer_condition)"
+                }
+              ]
+            }
+          ]
+        },
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": [
+              "subnet-0598352c1b611c3f5",
+              "subnet-075277cb3e9bae077"
+            ],
+            "SecurityGroups": [
+              "sg-0e88b8715a9ac5b84"
+            ],
+            "AssignPublicIp": "DISABLED"
+          }
+        }
+      },
+      "ResultPath": "$.ECSOutput",
+      "Next": "Canner Audit"
+    },
+    "Canner Audit": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "arn:aws:ecs:us-west-2:960216436767:cluster/billing-prod-job",
+        "TaskDefinition": "arn:aws:ecs:us-west-2:960216436767:task-definition/billing_prod_revenue_canner_audit_td:2",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": [
+              "subnet-0598352c1b611c3f5",
+              "subnet-075277cb3e9bae077"
+            ],
+            "SecurityGroups": [
+              "sg-0e88b8715a9ac5b84"
+            ],
+            "AssignPublicIp": "DISABLED"
+          }
+        }
+      },
+      "ResultPath": null,
+      "Next": "Map"
+    },
+    "Map": {
+      "Type": "Map",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "Generate PDF process",
+        "States": {
+          "Generate PDF process": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::ecs:runTask.sync",
+            "Parameters": {
+              "LaunchType": "FARGATE",
+              "Cluster": "arn:aws:ecs:us-west-2:960216436767:cluster/billing-prod-job",
+              "TaskDefinition": "arn:aws:ecs:us-west-2:960216436767:task-definition/billing_prod_bill_pdf_taskdef:7",
+              "NetworkConfiguration": {
+                "AwsvpcConfiguration": {
+                  "Subnets": [
+                    "subnet-0598352c1b611c3f5",
+                    "subnet-075277cb3e9bae077"
+                  ],
+                  "SecurityGroups": [
+                    "sg-0e88b8715a9ac5b84"
+                  ],
+                  "AssignPublicIp": "DISABLED"
+                }
+              }
+            },
+            "End": true
+          }
+        }
+      },
+      "Label": "Map",
+      "MaxConcurrency": 1000,
+      "ItemsPath": "$.NumberOfGenPdfMachine",
+      "ToleratedFailurePercentage": 50,
+      "ResultPath": null,
+      "Next": "Check PDF (4th only)"
+    },
+    "Check PDF (4th only)": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "arn:aws:ecs:us-west-2:960216436767:cluster/billing-prod-job",
+        "TaskDefinition": "arn:aws:ecs:us-west-2:960216436767:task-definition/billing_prod_revenue_checkpdf_td:2",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": [
+              "subnet-0598352c1b611c3f5",
+              "subnet-075277cb3e9bae077"
+            ],
+            "SecurityGroups": [
+              "sg-0e88b8715a9ac5b84"
+            ],
+            "AssignPublicIp": "DISABLED"
+          }
+        }
+      },
+      "Next": "Success"
+    },
+    "Success": {
+      "Type": "Succeed"
+    }
+  }
+}

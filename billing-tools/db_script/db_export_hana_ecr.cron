@@ -1,0 +1,7 @@
+#!/bin/bash
+
+export PATH=$PATH
+
+0 11,22 1-3,6-31 * * ec2-user /opt/billing_crontab/db_backup/db_export_hana.sh ecr Prod 1 2>&1 | tee -a /opt/billing_crontab/db_backup/db_export_hana.log
+0 6 5 * * ec2-user /opt/billing_crontab/db_backup/db_export_hana.sh ecr Prod 1 2>&1 | tee -a /opt/billing_crontab/db_backup/db_export_hana.log
+0 11 5 * * ec2-user /opt/billing_crontab/db_backup/db_export_hana.sh ecr Prod 3  2>&1 | tee -a /opt/billing_crontab/db_backup/db_export_hana.log

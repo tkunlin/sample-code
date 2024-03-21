@@ -1,0 +1,618 @@
+{
+  "Comment": "A description of my state machine",
+  "StartAt": "Update Contract Status",
+  "States": {
+    "Update Contract Status": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:us-west-2:863203846708:function:billing-stage-cur-etl-pipeline-contract-status"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Sync Ples Rebate List",
+      "ResultPath": null
+    },
+    "Sync Ples Rebate List": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:us-west-2:863203846708:function:billing-stage-cur-etl-pipeline-sync-ples-rebate-list:$LATEST"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Sync Ref Table Job",
+      "ResultPath": null
+    },
+    "Sync Ref Table Job": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "arn:aws:ecs:us-west-2:863203846708:cluster/billing-stage-job",
+        "TaskDefinition": "arn:aws:ecs:us-west-2:863203846708:task-definition/billing_stage_cur_etl_pipeline_s3_table_sync_td:2",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": [
+              "subnet-07441370101acec1c",
+              "subnet-01da4771bd3195aa6"
+            ],
+            "SecurityGroups": [
+              "sg-06bf17ebdda9cb944"
+            ],
+            "AssignPublicIp": "DISABLED"
+          }
+        }
+      },
+      "Next": "Directly Run SupportFee",
+      "ResultPath": null
+    },
+    "Directly Run SupportFee": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.executeSupportFee",
+          "BooleanEquals": true,
+          "Next": "Compute SupportFee"
+        }
+      ],
+      "Default": "Skip Rebilling Process"
+    },
+    "Compute SupportFee": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "arn:aws:ecs:us-west-2:863203846708:cluster/billing-stage-job",
+        "TaskDefinition": "arn:aws:ecs:us-west-2:863203846708:task-definition/billing_stage_cur_etl_pipeline_cur_support_fee_td:6",
+        "Overrides": {
+          "ContainerOverrides": [
+            {
+              "Name": "billing_cur_etl_pipeline_cur_support_fee",
+              "Environment": [
+                {
+                  "Name": "LINKED_ACCOUNT_ID",
+                  "Value.$": "States.Format('{}', $.executeSupportFeePayload.payload.linked_account_id)"
+                },
+                {
+                  "Name": "BILLING_YYYY_MM_DD",
+                  "Value.$": "States.Format('{}', $.executeSupportFeePayload.payload.billing_yyyy_mm_dd)"
+                }
+              ]
+            }
+          ]
+        },
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": [
+              "subnet-07441370101acec1c",
+              "subnet-01da4771bd3195aa6"
+            ],
+            "SecurityGroups": [
+              "sg-06bf17ebdda9cb944"
+            ],
+            "AssignPublicIp": "DISABLED"
+          }
+        }
+      },
+      "Next": "skipTagReport",
+      "ResultPath": null
+    },
+    "Skip Rebilling Process": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.skipRebilling",
+          "BooleanEquals": true,
+          "Next": "Sync Ref Table Job before Tagreport"
+        }
+      ],
+      "Default": "Skip Partition CUR Process"
+    },
+    "Skip Partition CUR Process": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.skipCurPartition",
+          "BooleanEquals": true,
+          "Next": "Send Linked Account Rebilling Msg"
+        }
+      ],
+      "Default": "Send Payer Message"
+    },
+    "Send Payer Message": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:us-west-2:863203846708:function:billing-stage-cur-etl-pipeline-payer-account-producer",
+        "Payload.$": "$"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Status Code Check",
+      "OutputPath": "$.Payload"
+    },
+    "Status Code Check": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.statusCode",
+          "NumericEquals": 200,
+          "Next": "Parallel Sync CUR"
+        }
+      ],
+      "OutputPath": "$.originalInput",
+      "Default": "Fail"
+    },
+    "Fail": {
+      "Type": "Fail"
+    },
+    "Parallel Sync CUR": {
+      "Type": "Map",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "Sync Payer CUR to S3",
+        "States": {
+          "Sync Payer CUR to S3": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::ecs:runTask.sync",
+            "Parameters": {
+              "LaunchType": "FARGATE",
+              "Cluster": "arn:aws:ecs:us-west-2:863203846708:cluster/billing-stage-job",
+              "TaskDefinition": "arn:aws:ecs:us-west-2:863203846708:task-definition/billing_stage_cur_etl_pipeline_cur_sync_td:2",
+              "NetworkConfiguration": {
+                "AwsvpcConfiguration": {
+                  "Subnets": [
+                    "subnet-07441370101acec1c",
+                    "subnet-01da4771bd3195aa6"
+                  ],
+                  "SecurityGroups": [
+                    "sg-06bf17ebdda9cb944"
+                  ],
+                  "AssignPublicIp": "DISABLED"
+                }
+              }
+            },
+            "End": true,
+            "Retry": [
+              {
+                "ErrorEquals": [
+                  "States.Timeout"
+                ],
+                "BackoffRate": 1,
+                "IntervalSeconds": 0,
+                "MaxAttempts": 0
+              }
+            ],
+            "TimeoutSeconds": 1800
+          }
+        }
+      },
+      "Next": "Parallel Split CUR",
+      "InputPath": "$.syncPayerCurToS3.instanceArray",
+      "ResultPath": null,
+      "MaxConcurrency": 1000,
+      "Label": "ParallelSyncCUR",
+      "ToleratedFailurePercentage": 50
+    },
+    "Parallel Split CUR": {
+      "Type": "Map",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "EMR CreateCluster",
+        "States": {
+          "EMR CreateCluster": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::elasticmapreduce:createCluster.sync",
+            "Parameters": {
+              "Name": "partition-cur-cluster",
+              "ServiceRole": "EMR_DefaultRole",
+              "JobFlowRole": "EMR_EC2_DefaultRole",
+              "ReleaseLabel": "emr-6.7.0",
+              "AutoTerminationPolicy": {
+                "IdleTimeout": 180
+              },
+              "Instances": {
+                "KeepJobFlowAliveWhenNoSteps": true,
+                "Ec2SubnetId": "subnet-07441370101acec1c",
+                "InstanceFleets": [
+                  {
+                    "InstanceFleetType": "MASTER",
+                    "Name": "Master",
+                    "TargetOnDemandCapacity": 1,
+                    "InstanceTypeConfigs": [
+                      {
+                        "InstanceType": "m5a.xlarge"
+                      }
+                    ]
+                  },
+                  {
+                    "InstanceFleetType": "CORE",
+                    "Name": "CORE",
+                    "TargetOnDemandCapacity": 5,
+                    "InstanceTypeConfigs": [
+                      {
+                        "InstanceType": "m5a.xlarge"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "BootstrapActions": [
+                {
+                  "Name": "boostrap",
+                  "ScriptBootstrapAction": {
+                    "Path": "s3://billing-stage-cur-etl-pipeline-datalake/emr-partition-cur/bootstrap/emr-bootstrap.sh"
+                  }
+                }
+              ],
+              "Applications": [
+                {
+                  "Name": "Hadoop"
+                },
+                {
+                  "Name": "Hive"
+                },
+                {
+                  "Name": "Spark"
+                }
+              ],
+              "LogUri": "s3://billing-stage-cur-etl-pipeline-datalake/log/emr-partition-cur-cluster/",
+              "VisibleToAllUsers": true
+            },
+            "Next": "Add Spark Step - Spilt CUR into linked account level",
+            "Retry": [
+              {
+                "ErrorEquals": [
+                  "States.TaskFailed"
+                ],
+                "BackoffRate": 2,
+                "IntervalSeconds": 1,
+                "MaxAttempts": 2
+              }
+            ],
+            "TimeoutSeconds": 3600
+          },
+          "Add Spark Step - Spilt CUR into linked account level": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::elasticmapreduce:addStep.sync",
+            "Parameters": {
+              "ClusterId.$": "$.Cluster.Id",
+              "Step": {
+                "Name": "SparkJob",
+                "HadoopJarStep": {
+                  "Jar": "command-runner.jar",
+                  "Args": [
+                    "sudo",
+                    "spark-submit",
+                    "s3://billing-stage-cur-etl-pipeline-datalake/emr-partition-cur/scripts/partition_cur-v3.0.0.1.py",
+                    "Stage",
+                    "us-west-2"
+                  ]
+                }
+              }
+            },
+            "End": true,
+            "Catch": [
+              {
+                "ErrorEquals": [
+                  "States.TaskFailed"
+                ],
+                "Next": "EMR CreateCluster"
+              }
+            ],
+            "TimeoutSeconds": 3600
+          }
+        }
+      },
+      "ResultPath": null,
+      "Next": "Send Linked Account Rebilling Msg",
+      "ToleratedFailurePercentage": 50,
+      "Label": "ParallelSplitCUR",
+      "MaxConcurrency": 1000,
+      "ItemsPath": "$.splitCurIntoLinkedAccount.instanceArray"
+    },
+    "Send Linked Account Rebilling Msg": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:us-west-2:863203846708:function:billing-stage-cur-etl-pipeline-get-etl-task-list",
+        "Payload.$": "$"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Status Code Check (Send Linked Account Rebilling Msg)",
+      "OutputPath": "$.Payload"
+    },
+    "Status Code Check (Send Linked Account Rebilling Msg)": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.statusCode",
+          "NumericEquals": 200,
+          "Next": "Parallel Run Rebilling Task"
+        }
+      ],
+      "Default": "Fail"
+    },
+    "Parallel Run Rebilling Task": {
+      "Type": "Map",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "Sequentail Waiting",
+        "States": {
+          "Sequentail Waiting": {
+            "Type": "Wait",
+            "Next": "RunInstances",
+            "SecondsPath": "$"
+          },
+          "RunInstances": {
+            "Type": "Task",
+            "Parameters": {
+              "BlockDeviceMappings": [
+                {
+                  "DeviceName": "/dev/xvda",
+                  "Ebs": {
+                    "DeleteOnTermination": true,
+                    "Iops": 3000,
+                    "VolumeSize": 450,
+                    "VolumeType": "gp3"
+                  }
+                }
+              ],
+              "ImageId": "ami-0711a05c10d18c162",
+              "InstanceType": "m6a.xlarge",
+              "MaxCount": 1,
+              "MinCount": 1,
+              "Monitoring": {
+                "Enabled": true
+              },
+              "SecurityGroupIds": [
+                "sg-06bf17ebdda9cb944"
+              ],
+              "SubnetId": "subnet-07441370101acec1c",
+              "UserData": "IyEvYmluL2Jhc2gKZWNobyAiRUNTX0NMVVNURVI9YmlsbGluZy1zdGFnZS1qb2IgIj4+IC9ldGMvZWNzL2Vjcy5jb25maWc=",
+              "TagSpecifications": [
+                {
+                  "ResourceType": "instance",
+                  "Tags": [
+                    {
+                      "Key": "Name",
+                      "Value": "RebillingEtlInstance"
+                    }
+                  ]
+                }
+              ]
+            },
+            "Resource": "arn:aws:states:::aws-sdk:ec2:runInstances",
+            "Next": "Wait Until EC2 Is Running"
+          },
+          "Wait Until EC2 Is Running": {
+            "Type": "Wait",
+            "Seconds": 60,
+            "Next": "AssociateIamInstanceProfile"
+          },
+          "AssociateIamInstanceProfile": {
+            "Type": "Task",
+            "Parameters": {
+              "IamInstanceProfile": {
+                "Name": "RebillingEtlInstanceProfile"
+              },
+              "InstanceId.$": "$"
+            },
+            "Resource": "arn:aws:states:::aws-sdk:ec2:associateIamInstanceProfile",
+            "InputPath": "$.Instances[0].InstanceId",
+            "Next": "Wait Until EC2 Status Checked"
+          },
+          "Wait Until EC2 Status Checked": {
+            "Type": "Wait",
+            "Seconds": 60,
+            "Next": "Calculate Bill Item"
+          },
+          "Calculate Bill Item": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::ecs:runTask.sync",
+            "Parameters": {
+              "LaunchType": "EC2",
+              "Cluster": "arn:aws:ecs:us-west-2:863203846708:cluster/billing-stage-job",
+              "TaskDefinition": "arn:aws:ecs:us-west-2:863203846708:task-definition/billing_stage_cur_etl_pipeline_rebilling_etl_td:10",
+              "NetworkConfiguration": {
+                "AwsvpcConfiguration": {
+                  "Subnets": [
+                    "subnet-07441370101acec1c"
+                  ],
+                  "SecurityGroups": [
+                    "sg-06bf17ebdda9cb944"
+                  ],
+                  "AssignPublicIp": "DISABLED"
+                }
+              },
+              "EnableExecuteCommand": true
+            },
+            "TimeoutSeconds": 43200,
+            "Next": "TerminateInstances",
+            "ResultPath": null,
+            "Catch": [
+              {
+                "ErrorEquals": [
+                  "States.ALL"
+                ],
+                "Next": "TerminateInstances",
+                "ResultPath": "$.ErrorMessage"
+              }
+            ]
+          },
+          "TerminateInstances": {
+            "Type": "Task",
+            "End": true,
+            "Parameters": {
+              "InstanceIds.$": "States.Array($.InstanceId)"
+            },
+            "Resource": "arn:aws:states:::aws-sdk:ec2:terminateInstances",
+            "InputPath": "$.IamInstanceProfileAssociation"
+          }
+        }
+      },
+      "ItemsPath": "$.sequentialWaitTimeSecList",
+      "MaxConcurrency": 10000,
+      "Label": "ParallelRunRebillingTask",
+      "ToleratedFailureCount": 100,
+      "ToleratedFailurePercentage": 50,
+      "Next": "Compute SupportFee",
+      "ResultPath": null,
+      "OutputPath": "$.originalInput"
+    },
+    "skipTagReport": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.skipTagReport",
+          "BooleanEquals": true,
+          "Next": "Success"
+        }
+      ],
+      "Default": "Sync Ref Table Job before Tagreport"
+    },
+    "Success": {
+      "Type": "Succeed"
+    },
+    "Sync Ref Table Job before Tagreport": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "arn:aws:ecs:us-west-2:863203846708:cluster/billing-stage-job",
+        "TaskDefinition": "arn:aws:ecs:us-west-2:863203846708:task-definition/billing_stage_cur_etl_pipeline_s3_table_sync_td:2",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": [
+              "subnet-07441370101acec1c",
+              "subnet-01da4771bd3195aa6"
+            ],
+            "SecurityGroups": [
+              "sg-06bf17ebdda9cb944"
+            ],
+            "AssignPublicIp": "DISABLED"
+          }
+        }
+      },
+      "ResultPath": null,
+      "Next": "Send TagReport Msg"
+    },
+    "Send TagReport Msg": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:us-west-2:863203846708:function:billing-stage-cur-etl-pipeline-send-tagreport-sqs:$LATEST",
+        "Payload.$": "$"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Map"
+    },
+    "Map": {
+      "Type": "Map",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "Generate TagReport",
+        "States": {
+          "Generate TagReport": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::ecs:runTask.sync",
+            "Parameters": {
+              "LaunchType": "FARGATE",
+              "Cluster": "arn:aws:ecs:us-west-2:863203846708:cluster/billing-stage-job",
+              "TaskDefinition": "arn:aws:ecs:us-west-2:863203846708:task-definition/billing_stage_cur_etl_pipeline_tagreport_td:6",
+              "NetworkConfiguration": {
+                "AwsvpcConfiguration": {
+                  "Subnets": [
+                    "subnet-07441370101acec1c",
+                    "subnet-01da4771bd3195aa6"
+                  ],
+                  "SecurityGroups": [
+                    "sg-06bf17ebdda9cb944"
+                  ],
+                  "AssignPublicIp": "DISABLED"
+                }
+              }
+            },
+            "End": true,
+            "TimeoutSeconds": 43200
+          }
+        }
+      },
+      "Label": "Map",
+      "MaxConcurrency": 10000,
+      "ItemsPath": "$.numOfEcs",
+      "End": true,
+      "ToleratedFailurePercentage": 60
+    }
+  }
+}

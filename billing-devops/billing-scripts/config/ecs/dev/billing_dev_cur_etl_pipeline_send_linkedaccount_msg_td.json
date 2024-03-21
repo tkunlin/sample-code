@@ -1,0 +1,49 @@
+{
+    "family": "billing_dev_cur_etl_pipeline_send_linkedaccount_msg_td",
+    "containerDefinitions": [
+        {
+            "name": "billing_dev_cur_etl_pipeline_send_linkedaccount_msg",
+            "image": "863203846708.dkr.ecr.us-west-2.amazonaws.com/billing-cur-etl-pipeline-send-linkedaccount-msg:dev",
+            "cpu": 1024,
+            "memory": 4096,
+            "portMappings": [],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "ENV",
+                    "value": "Dev"
+                },
+                {
+                    "name": "EVENT",
+                    "value": ""
+                }
+            ],
+            "environmentFiles": [],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "ulimits": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-create-group": "true",
+                    "awslogs-group": "/ecs/billing_dev_cur_etl_pipeline_send_linkedaccount_msg_td",
+                    "awslogs-region": "us-west-2",
+                    "awslogs-stream-prefix": "ecs"
+                },
+                "secretOptions": []
+            }
+        }
+    ],
+    "taskRoleArn": "arn:aws:iam::863203846708:role/billing-ecs-task-role",
+    "executionRoleArn": "arn:aws:iam::863203846708:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "1024",
+    "memory": "4096",
+    "runtimePlatform": {
+        "cpuArchitecture": "X86_64",
+        "operatingSystemFamily": "LINUX"
+    }
+}

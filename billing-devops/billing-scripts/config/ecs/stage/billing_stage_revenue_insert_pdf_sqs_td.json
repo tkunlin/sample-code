@@ -1,0 +1,68 @@
+{
+    "family": "billing_stage_revenue_insert_pdf_sqs_td",
+    "containerDefinitions": [
+        {
+            "name": "billing_revenue_insert_pdf_sqs",
+            "image": "960216436767.dkr.ecr.us-west-2.amazonaws.com/billing-revenue-insert-pdf-sqs:v2.0.10.1",
+            "cpu": 0,
+            "portMappings": [],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "LINKED_ACCOUNT_ID",
+                    "value": ""
+                },
+                {
+                    "name": "MAX_NUM_ECS",
+                    "value": "50"
+                },
+                {
+                    "name": "ONLY_RUN_PDF",
+                    "value": "False"
+                },
+                {
+                    "name": "BILLING_YYYY_MM",
+                    "value": "2023/07"
+                },
+                {
+                    "name": "CNO",
+                    "value": ""
+                },
+                {
+                    "name": "TRANSFER_CONDITION",
+                    "value": ""
+                },
+                {
+                    "name": "ENV",
+                    "value": "Stage"
+                }
+            ],
+            "environmentFiles": [],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "ulimits": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-create-group": "true",
+                    "awslogs-group": "/ecs/billing_stage_revenue_insert_pdf_sqs_td",
+                    "awslogs-region": "us-west-2",
+                    "awslogs-stream-prefix": "ecs"
+                },
+                "secretOptions": []
+            }
+        }
+    ],
+    "taskRoleArn": "arn:aws:iam::863203846708:role/billing-ecs-task-role",
+    "executionRoleArn": "arn:aws:iam::863203846708:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "1024",
+    "memory": "4096",
+    "runtimePlatform": {
+        "cpuArchitecture": "X86_64",
+        "operatingSystemFamily": "LINUX"
+    }
+}

@@ -1,0 +1,301 @@
+{
+  "Comment": "A description of my state machine",
+  "StartAt": "Directly Run PDF",
+  "States": {
+    "Directly Run PDF": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.ConditionSetting.only_run_pdf",
+          "BooleanEquals": true,
+          "Next": "Insert message to PDF sqs"
+        }
+      ],
+      "Default": "Send Message to CNO sqs"
+    },
+    "Insert message to PDF sqs": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "arn:aws:ecs:us-west-2:168051394147:cluster/billing-stage-job",
+        "TaskDefinition": "arn:aws:ecs:us-west-2:168051394147:task-definition/billing_stage_revenue_insert_pdf_sqs_td:1",
+        "Overrides": {
+          "ContainerOverrides": [
+            {
+              "Name": "billing_revenue_insert_pdf_sqs",
+              "Environment": [
+                {
+                  "Name": "CNO",
+                  "Value.$": "States.Format('{}', $.CommonVariable.cno)"
+                },
+                {
+                  "Name": "BILLING_YYYY_MM",
+                  "Value.$": "States.Format('{}', $.CommonVariable.billing_yyyy_mm)"
+                },
+                {
+                  "Name": "LINKED_ACCOUNT_ID",
+                  "Value.$": "States.Format('{}', $.CommonVariable.linked_account_id)"
+                },
+                {
+                  "Name": "ONLY_RUN_PDF",
+                  "Value.$": "States.Format('{}', $.ConditionSetting.only_run_pdf)"
+                }
+              ]
+            }
+          ]
+        },
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": [
+              "subnet-0035a38e73ee0f585",
+              "subnet-02025a435904158f7"
+            ],
+            "SecurityGroups": [
+              "sg-0266d0602217f0f1b"
+            ],
+            "AssignPublicIp": "DISABLED"
+          }
+        }
+      },
+      "ResultPath": "$.ECSOutput",
+      "Next": "Generate M0100 pdf"
+    },
+    "Generate M0100 pdf": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "arn:aws:ecs:us-west-2:168051394147:cluster/billing-stage-job",
+        "TaskDefinition": "arn:aws:ecs:us-west-2:168051394147:task-definition/billing_stage_gen_M0100_pdf_td:1",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": [
+              "subnet-0035a38e73ee0f585",
+              "subnet-02025a435904158f7"
+            ],
+            "SecurityGroups": [
+              "sg-0266d0602217f0f1b"
+            ],
+            "AssignPublicIp": "DISABLED"
+          }
+        }
+      },
+      "Next": "Gen PDF",
+      "ResultPath": null
+    },
+    "Send Message to CNO sqs": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "arn:aws:ecs:us-west-2:168051394147:cluster/billing-stage-job",
+        "TaskDefinition": "arn:aws:ecs:us-west-2:168051394147:task-definition/billing_stage_revenue_send_cno_sqs_td:3",
+        "Overrides": {
+          "ContainerOverrides": [
+            {
+              "Name": "billing_revenue_send_cno_sqs",
+              "Environment": [
+                {
+                  "Name": "CNO",
+                  "Value.$": "States.Format('{}', $.CommonVariable.cno)"
+                },
+                {
+                  "Name": "BILLING_YYYY_MM",
+                  "Value.$": "States.Format('{}', $.CommonVariable.billing_yyyy_mm)"
+                },
+                {
+                  "Name": "TRANSFER_CONDITION",
+                  "Value.$": "States.Format('{}', $.ConditionSetting.transfer_condition)"
+                },
+                {
+                  "Name": "RUN_CHECK_PDF",
+                  "Value.$": "States.Format('{}', $.ConditionSetting.run_check_pdf)"
+                },
+                {
+                  "Name": "ONLY_RUN_CHECK_PDF",
+                  "Value.$": "States.Format('{}', $.ConditionSetting.only_run_check_pdf)"
+                }
+              ]
+            }
+          ]
+        },
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": [
+              "subnet-0035a38e73ee0f585",
+              "subnet-02025a435904158f7"
+            ],
+            "SecurityGroups": [
+              "sg-0266d0602217f0f1b"
+            ],
+            "AssignPublicIp": "DISABLED"
+          }
+        }
+      },
+      "Next": "OnlyRunCheckPDForNot",
+      "ResultPath": "$.ecsOutput"
+    },
+    "OnlyRunCheckPDForNot": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.ConditionSetting.only_run_check_pdf",
+          "BooleanEquals": true,
+          "Next": "check PDF"
+        }
+      ],
+      "Default": "Run Revenue Job"
+    },
+    "Run Revenue Job": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "arn:aws:ecs:us-west-2:168051394147:cluster/billing-stage-job",
+        "TaskDefinition": "arn:aws:ecs:us-west-2:168051394147:task-definition/billing_stage_revenue_computation_main_td:2",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": [
+              "subnet-0035a38e73ee0f585",
+              "subnet-02025a435904158f7"
+            ],
+            "SecurityGroups": [
+              "sg-0266d0602217f0f1b"
+            ],
+            "AssignPublicIp": "DISABLED"
+          }
+        }
+      },
+      "ResultPath": null,
+      "Next": "OnlyRunRevenue"
+    },
+    "OnlyRunRevenue": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.ConditionSetting.only_run_revenue",
+          "BooleanEquals": true,
+          "Next": "Success"
+        }
+      ],
+      "Default": "Insert message to PDF sqs"
+    },
+    "Gen PDF": {
+      "Type": "Map",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "Generate PDF process",
+        "States": {
+          "Generate PDF process": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::ecs:runTask.sync",
+            "Parameters": {
+              "LaunchType": "FARGATE",
+              "Cluster": "arn:aws:ecs:us-west-2:168051394147:cluster/billing-stage-job",
+              "TaskDefinition": "arn:aws:ecs:us-west-2:168051394147:task-definition/billing_stage_bill_pdf_taskdef:4",
+              "NetworkConfiguration": {
+                "AwsvpcConfiguration": {
+                  "Subnets": [
+                    "subnet-0035a38e73ee0f585",
+                    "subnet-02025a435904158f7"
+                  ],
+                  "SecurityGroups": [
+                    "sg-0266d0602217f0f1b"
+                  ],
+                  "AssignPublicIp": "DISABLED"
+                }
+              }
+            },
+            "End": true
+          }
+        }
+      },
+      "Label": "GenPDF",
+      "MaxConcurrency": 1000,
+      "ItemsPath": "$.NumberOfGenPdfMachine",
+      "Next": "Check PDF and TagReport",
+      "ToleratedFailurePercentage": 50,
+      "ResultPath": null
+    },
+    "Check PDF and TagReport": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "arn:aws:ecs:us-west-2:168051394147:cluster/billing-stage-job",
+        "TaskDefinition": "arn:aws:ecs:us-west-2:168051394147:task-definition/billing_stage_tool_check_pdf_tagReport_td:1",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": [
+              "subnet-0035a38e73ee0f585",
+              "subnet-02025a435904158f7"
+            ],
+            "SecurityGroups": [
+              "sg-0266d0602217f0f1b"
+            ],
+            "AssignPublicIp": "DISABLED"
+          }
+        }
+      },
+      "Next": "Check PDF or not",
+      "ResultPath": null
+    },
+    "Check PDF or not": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.ConditionSetting.run_check_pdf",
+          "BooleanEquals": false,
+          "Next": "Success"
+        }
+      ],
+      "Default": "check PDF"
+    },
+    "Success": {
+      "Type": "Succeed"
+    },
+    "check PDF": {
+      "Type": "Map",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "Check PDF (4th only)",
+        "States": {
+          "Check PDF (4th only)": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::ecs:runTask.sync",
+            "Parameters": {
+              "LaunchType": "FARGATE",
+              "Cluster": "arn:aws:ecs:us-west-2:168051394147:cluster/billing-stage-job",
+              "TaskDefinition": "arn:aws:ecs:us-west-2:168051394147:task-definition/billing_stage_revenue_checkpdf_td:1",
+              "NetworkConfiguration": {
+                "AwsvpcConfiguration": {
+                  "Subnets": [
+                    "subnet-0035a38e73ee0f585",
+                    "subnet-02025a435904158f7"
+                  ],
+                  "SecurityGroups": [
+                    "sg-0266d0602217f0f1b"
+                  ],
+                  "AssignPublicIp": "DISABLED"
+                }
+              }
+            },
+            "End": true
+          }
+        }
+      },
+      "Next": "Success",
+      "Label": "checkPDF",
+      "MaxConcurrency": 1000,
+      "ToleratedFailurePercentage": 50,
+      "ItemsPath": "$.NumberOfGenPdfMachine"
+    }
+  }
+}

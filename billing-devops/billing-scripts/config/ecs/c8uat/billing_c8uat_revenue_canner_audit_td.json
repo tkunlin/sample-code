@@ -1,0 +1,85 @@
+{
+    "family": "billing_uat_revenue_canner_audit_td",
+    "containerDefinitions": [
+        {
+            "name": "billing-revenue-canner-audit",
+            "image": "863203846708.dkr.ecr.us-west-2.amazonaws.com/billing-revenue-canner-audit:v2.0.10.1",
+            "cpu": 1024,
+            "memory": 4096,
+            "portMappings": [],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "date",
+                    "value": "2023-07-04"
+                },
+                {
+                    "name": "AWS_REGION",
+                    "value": "us-west-2"
+                },
+                {
+                    "name": "for_error_message_body",
+                    "value": "Monitoring of company transfer is completed, please check attachments."
+                },
+                {
+                    "name": "ASPNETCORE_ENVIRONMENT",
+                    "value": "Uat"
+                },
+                {
+                    "name": "subject",
+                    "value": "Monitoring ressult of company transfer"
+                },
+                {
+                    "name": "fail_notification_mail",
+                    "value": "ecv.billing.rd@ecloudvalley.com"
+                },
+                {
+                    "name": "AWS_DEFAULT_REGION",
+                    "value": "us-west-2"
+                },
+                {
+                    "name": "ENV",
+                    "value": "Uat"
+                },
+                {
+                    "name": "ecloud_database",
+                    "value": "ecloud"
+                },
+                {
+                    "name": "job_name",
+                    "value": "daily"
+                },
+                {
+                    "name": "sender",
+                    "value": "ECV Billing<ecv.billing@ecloudvalley.com>"
+                },
+                {
+                    "name": "for_normal_message_body",
+                    "value": "Monitoring of company transfer is completed, and data status is fine."
+                },
+                {
+                    "name": "s_email",
+                    "value": "TW Billing OP Group<billing.op@ecloudvalley.com>,TW Billing RD Group<ecv.billing.rd@ecloudvalley.com>"
+                }
+            ],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/billing_uat_revenue_canner_audit_td",
+                    "awslogs-region": "us-west-2",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            }
+        }
+    ],
+    "taskRoleArn": "arn:aws:iam::168051394147:role/billing-ecs-task-role",
+    "executionRoleArn": "arn:aws:iam::168051394147:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "1024",
+    "memory": "4096"
+}

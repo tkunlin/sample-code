@@ -1,0 +1,52 @@
+{
+    "family": "billing_uat_revenue_checkpdf_td",
+    "containerDefinitions": [
+        {
+            "name": "billing_revenue_checkpdf",
+            "image": "863203846708.dkr.ecr.us-west-2.amazonaws.com/billing-revenue-checkpdf:v1.0.9.0",
+            "cpu": 0,
+            "portMappings": [],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "ENV",
+                    "value": "Uat"
+                },
+                {
+                    "name": "CNO",
+                    "value": ""
+                },
+                {
+                    "name": "BILLING_YYYY_MM",
+                    "value": ""
+                }
+            ],
+            "environmentFiles": [],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "ulimits": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-create-group": "true",
+                    "awslogs-group": "/ecs/billing_uat_revenue_checkpdf_td",
+                    "awslogs-region": "us-west-2",
+                    "awslogs-stream-prefix": "ecs"
+                },
+                "secretOptions": []
+            }
+        }
+    ],
+    "taskRoleArn": "arn:aws:iam::863203846708:role/billing-ecs-task-role",
+    "executionRoleArn": "arn:aws:iam::863203846708:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "4096",
+    "memory": "8192",
+    "runtimePlatform": {
+        "cpuArchitecture": "X86_64",
+        "operatingSystemFamily": "LINUX"
+    }
+}

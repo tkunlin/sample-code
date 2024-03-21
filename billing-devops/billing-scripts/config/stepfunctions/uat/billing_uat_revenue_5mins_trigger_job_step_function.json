@@ -1,0 +1,131 @@
+{
+  "Comment": "A description of my state machine",
+  "StartAt": "Examine Dop Change and send rev-sqs",
+  "States": {
+    "Examine Dop Change and send rev-sqs": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "Payload.$": "$",
+        "FunctionName": "arn:aws:lambda:us-west-2:863203846708:function:billing-uat-revenue-5mins-examine-dop:$LATEST"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Message number"
+    },
+    "Message number": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.messsage_counts",
+          "NumericEquals": 0,
+          "Next": "5mins job no dop"
+        }
+      ],
+      "Default": "Run Revenue Job"
+    },
+    "5mins job no dop": {
+      "Type": "Succeed"
+    },
+    "Run Revenue Job": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "arn:aws:ecs:us-west-2:863203846708:cluster/billing-uat-job",
+        "TaskDefinition": "arn:aws:ecs:us-west-2:863203846708:task-definition/billing_uat_revenue_computation_main_td:6",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": [
+              "subnet-0e3bfe4f24cdd9a79",
+              "subnet-0a8cd931897f61be9"
+            ],
+            "SecurityGroups": [
+              "sg-052031cd3d90057b9"
+            ],
+            "AssignPublicIp": "DISABLED"
+          }
+        }
+      },
+      "ResultPath": null,
+      "Next": "Send PDF message to SQS"
+    },
+    "Send PDF message to SQS": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "Payload.$": "$",
+        "FunctionName": "arn:aws:lambda:us-west-2:863203846708:function:billing-uat-revenue-send-pdf-message:$LATEST"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Map"
+    },
+    "Map": {
+      "Type": "Map",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "Generate PDF process",
+        "States": {
+          "Generate PDF process": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::ecs:runTask.sync",
+            "Parameters": {
+              "LaunchType": "FARGATE",
+              "Cluster": "arn:aws:ecs:us-west-2:863203846708:cluster/billing-uat-job",
+              "TaskDefinition": "arn:aws:ecs:us-west-2:863203846708:task-definition/billing_uat_bill_pdf_taskdef:11",
+              "NetworkConfiguration": {
+                "AwsvpcConfiguration": {
+                  "Subnets": [
+                    "subnet-0e3bfe4f24cdd9a79",
+                    "subnet-0a8cd931897f61be9"
+                  ],
+                  "SecurityGroups": [
+                    "sg-052031cd3d90057b9"
+                  ],
+                  "AssignPublicIp": "DISABLED"
+                }
+              }
+            },
+            "End": true
+          }
+        }
+      },
+      "Label": "Map",
+      "MaxConcurrency": 1000,
+      "ItemsPath": "$.num_of_machine",
+      "Next": "5mins job with dop- Success",
+      "ToleratedFailurePercentage": 50
+    },
+    "5mins job with dop- Success": {
+      "Type": "Succeed"
+    }
+  }
+}

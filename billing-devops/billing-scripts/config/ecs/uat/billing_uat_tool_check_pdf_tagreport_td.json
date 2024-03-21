@@ -1,0 +1,45 @@
+{
+    "family": "billing_uat_tool_check_pdf_tagreport_td",
+    "containerDefinitions": [
+        {
+            "name": "billing_tool_check_pdf_tagReport",
+            "image": "863203846708.dkr.ecr.us-west-2.amazonaws.com/billing-tool-check-pdf-tagreport:v3.0.1.0",
+            "cpu": 0,
+            "portMappings": [],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "ENV",
+                    "value": "Uat"
+                }
+            ],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-create-group": "true",
+                    "awslogs-group": "/ecs/billing_uat_tool_check_pdf_tagreport_td",
+                    "awslogs-region": "us-west-2",
+                    "awslogs-stream-prefix": "ecs"
+                },
+                "secretOptions": []
+            }
+        }
+    ],
+    "taskRoleArn": "arn:aws:iam::863203846708:role/billing-ecs-task-role",
+    "executionRoleArn": "arn:aws:iam::863203846708:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "1024",
+    "memory": "4096",
+    "ephemeralStorage": {
+        "sizeInGiB": 100
+    },
+    "runtimePlatform": {
+        "cpuArchitecture": "X86_64",
+        "operatingSystemFamily": "LINUX"
+    }
+}

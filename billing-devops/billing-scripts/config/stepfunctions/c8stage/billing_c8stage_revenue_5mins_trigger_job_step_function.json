@@ -1,0 +1,109 @@
+{
+  "Comment": "A description of my state machine",
+  "StartAt": "Examine Dop Change",
+  "States": {
+    "Examine Dop Change": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "Payload.$": "$",
+        "FunctionName": "arn:aws:lambda:us-west-2:168051394147:function:billing-stage-revenue-5mins-examine-dop:$LATEST"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Message number"
+    },
+    "Message number": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.messsage_counts",
+          "NumericEquals": 0,
+          "Next": "5mins job no dop"
+        }
+      ],
+      "Default": "Run Revenue Job"
+    },
+    "5mins job no dop": {
+      "Type": "Succeed"
+    },
+    "Run Revenue Job": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "arn:aws:ecs:us-west-2:168051394147:cluster/billing-stage-job",
+        "TaskDefinition": "arn:aws:ecs:us-west-2:168051394147:task-definition/billing_stage_revenue_computation_main_td:2",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": [
+              "subnet-0035a38e73ee0f585",
+              "subnet-02025a435904158f7"
+            ],
+            "SecurityGroups": [
+              "sg-0266d0602217f0f1b"
+            ],
+            "AssignPublicIp": "DISABLED"
+          }
+        }
+      },
+      "ResultPath": null,
+      "Next": "Map",
+      "InputPath": "$.messsage_counts"
+    },
+    "Map": {
+      "Type": "Map",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "Generate PDF process",
+        "States": {
+          "Generate PDF process": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::ecs:runTask.sync",
+            "Parameters": {
+              "LaunchType": "FARGATE",
+              "Cluster": "arn:aws:ecs:us-west-2:168051394147:cluster/billing-stage-job",
+              "TaskDefinition": "arn:aws:ecs:us-west-2:168051394147:task-definition/billing_stage_bill_pdf_taskdef:4",
+              "NetworkConfiguration": {
+                "AwsvpcConfiguration": {
+                  "Subnets": [
+                    "subnet-0035a38e73ee0f585",
+                    "subnet-02025a435904158f7"
+                  ],
+                  "SecurityGroups": [
+                    "sg-0266d0602217f0f1b"
+                  ],
+                  "AssignPublicIp": "DISABLED"
+                }
+              }
+            },
+            "End": true
+          }
+        }
+      },
+      "Label": "Map",
+      "MaxConcurrency": 1000,
+      "ItemsPath": "$.num_of_machine",
+      "Next": "5mins job with dop- Success",
+      "ToleratedFailurePercentage": 50
+    },
+    "5mins job with dop- Success": {
+      "Type": "Succeed"
+    }
+  }
+}

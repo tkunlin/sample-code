@@ -1,0 +1,99 @@
+{
+  "Comment": "A description of my state machine",
+  "StartAt": "Check condition setting",
+  "States": {
+    "Check condition setting": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.ConditionSetting.run_check_cost",
+          "BooleanEquals": true,
+          "Next": "Send payerInfo to sqs"
+        }
+      ],
+      "Default": "Success"
+    },
+    "Send payerInfo to sqs": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:us-west-2:863203846708:function:billing-dev-compare-cost-send-payer_info:$LATEST",
+        "Payload.$": "$"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Check msg"
+    },
+    "Check msg": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Not": {
+            "Variable": "$.messsage_counts",
+            "NumericEquals": 0
+          },
+          "Next": "From billItem and aws console"
+        }
+      ],
+      "Default": "Success - No msg"
+    },
+    "Success - No msg": {
+      "Type": "Succeed"
+    },
+    "From billItem and aws console": {
+      "Type": "Map",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "Check cost processor",
+        "States": {
+          "Check cost processor": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::ecs:runTask.sync",
+            "Parameters": {
+              "LaunchType": "FARGATE",
+              "Cluster": "arn:aws:ecs:us-west-2:863203846708:cluster/billing-dev-job",
+              "TaskDefinition": "arn:aws:ecs:us-west-2:863203846708:task-definition/billing_dev_cost_explorer_td:2",
+              "NetworkConfiguration": {
+                "AwsvpcConfiguration": {
+                  "Subnets": [
+                    "subnet-031425f6c9b3838bd",
+                    "subnet-0f1cc7d041343c904"
+                  ],
+                  "SecurityGroups": [
+                    "sg-0925271d926b84730"
+                  ],
+                  "AssignPublicIp": "DISABLED"
+                }
+              }
+            },
+            "End": true
+          }
+        }
+      },
+      "Label": "FrombillItemandawsconsole",
+      "MaxConcurrency": 1000,
+      "Next": "Success",
+      "ToleratedFailurePercentage": 50,
+      "ResultPath": null,
+      "ItemsPath": "$.num_of_machine"
+    },
+    "Success": {
+      "Type": "Succeed"
+    }
+  }
+}
