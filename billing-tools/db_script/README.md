@@ -1,6 +1,7 @@
 How to deploy this package?
 
 Run the command as below to extract tarball and deploy package
+```
 # tar xzvf billing-tool-db-export-$VERSION.tar.gz /tmp/billing-tool-db-export-$VERSION
 # cd /tmp/billing-tool-db-export-$VERSION
 # chmod +x deploy.sh 
@@ -8,7 +9,7 @@ Run the command as below to extract tarball and deploy package
 or 
 # ./deploy.sh ecv (For ecv db export)
 # ./deploy.sh ecr (For ecr db export)
-
+```
 
 
 Release notes:
